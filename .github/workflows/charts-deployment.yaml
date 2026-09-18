@@ -10,6 +10,7 @@ on:
 
 jobs:
   deployment:
+    if: github.repository == 'fonoster/routr'
     name: Build & Deployment
     runs-on: ubuntu-latest
 

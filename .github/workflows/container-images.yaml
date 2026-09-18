@@ -1,0 +1,107 @@
+name: container images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yaml
+
+  publish:
+    name: Build and publish fork images
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Build the checked-out workspaces and Java artifacts
+        run: |
+          npm ci
+          npm run build
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image names
+        id: images
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "prefix=ghcr.io/${OWNER,,}" >> "$GITHUB_OUTPUT"
+      - name: Build and publish Connect
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .github/docker/Dockerfile
+          target: connect
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.images.outputs.prefix }}/routr-connect:latest
+            ${{ steps.images.outputs.prefix }}/routr-connect:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+          cache-from: type=gha,scope=routr-connect
+          cache-to: type=gha,mode=max,scope=routr-connect
+      - name: Build and publish all-in-one
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .github/docker/Dockerfile
+          target: one
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.images.outputs.prefix }}/routr-one:latest
+            ${{ steps.images.outputs.prefix }}/routr-one:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+          cache-from: type=gha,scope=routr-one
+          cache-to: type=gha,mode=max,scope=routr-one
+      - name: Smoke-test published images
+        env:
+          IMAGE_PREFIX: ${{ steps.images.outputs.prefix }}
+        run: |
+          docker run --rm --entrypoint node "$IMAGE_PREFIX/routr-connect:sha-$GITHUB_SHA" \
+            -e 'require("@routr/connect"); require("@routr/location"); require("@routr/processor")'
+          docker run --rm --entrypoint node "$IMAGE_PREFIX/routr-one:sha-$GITHUB_SHA" \
+            -e 'require("@routr/connect"); require("@routr/pgdata"); require("@prisma/client")'
+          docker run --rm --entrypoint /service/jre/bin/java "$IMAGE_PREFIX/routr-one:sha-$GITHUB_SHA" -version
+      - name: Pull commands
+        env:
+          IMAGE_PREFIX: ${{ steps.images.outputs.prefix }}
+        run: |
+          {
+            echo '### Fork images (linux/amd64)'
+            echo '```sh'
+            echo "docker pull $IMAGE_PREFIX/routr-one:sha-$GITHUB_SHA"
+            echo "docker pull $IMAGE_PREFIX/routr-connect:sha-$GITHUB_SHA"
+            echo '```'
+            echo 'The latest tag follows main. New GHCR packages default to private; package owners can make them public in Package settings.'
+          } >> "$GITHUB_STEP_SUMMARY"

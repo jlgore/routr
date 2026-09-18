@@ -11,6 +11,7 @@ on:
 
 jobs:
   build_deploy:
+    if: github.repository == 'fonoster/routr'
     runs-on: ubuntu-latest
 
     steps:

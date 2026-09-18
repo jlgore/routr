@@ -12,6 +12,7 @@ name: test
 #   - the SEET compliance suite -> needs the full compose stack; see release.yaml
 
 on:
+  workflow_call:
   pull_request:
   push:
     branches:

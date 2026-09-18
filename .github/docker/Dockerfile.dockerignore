@@ -1,0 +1,15 @@
+.git
+.agents
+.codex
+.claude
+**/node_modules
+**/src
+**/test
+**/build
+**/tsconfig.tsbuildinfo
+dist
+docs
+site
+.certs
+**/.env
+**/.env.*
