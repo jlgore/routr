@@ -100,7 +100,8 @@ To authenticate Agents and Peers, the Processor will implement a `Username/Passw
 
 </td>
 <td>
-Assert identity over a Number for calls to the PSTN
+- Assert identity over a Number for calls to the PSTN
+- Call a registered Agent using its SIP URI and the Peer's credentials
 </td>
 </tr>
 

@@ -1,6 +1,6 @@
 # Concepts
 
-The Connect Mode is Routr's implementation of the SIPConnect standard. Routr introduces the Connect Processor and five routing types as part of the implementation.
+The Connect Mode is Routr's implementation of the SIPConnect standard. Routr introduces the Connect Processor and six routing types as part of the implementation.
 
 The Connect Mode introduces the Connect Processor, a built-in Processor with the necessary logic to implement the "SIP Connect v1.1" specification.
 
@@ -123,7 +123,7 @@ The `peer-to-pstn` routing type describes how a Peer such as Asterisk can reach 
 
 ## Agent-to-Peer
 
-This routing type allows any Agent to call a Peer. Because the Agent is going "outside" of the Domain's boundaries, the Agent must have a valid JWT token in the `X-Connect-Token` header. Incidentally, required claims in the JWT token include fields similar to the `Agent` resource. Here is an example of the payload of a JWT token:
+This routing type allows an Agent to call a Peer by authenticating with the Agent's credentials. Alternatively, an Agent can present a valid JWT token in the `X-Connect-Token` header. Required claims in the JWT token include fields similar to the `Agent` resource. Here is an example of the payload of a JWT token:
 
 ```json
 {
@@ -136,3 +136,11 @@ This routing type allows any Agent to call a Peer. Because the Agent is going "o
   "allowedMethods": ["INVITE", "REGISTER"]
 }
 ```
+
+## Peer-to-Agent
+
+The `peer-to-agent` routing type allows a Peer such as Asterisk to call a registered Agent directly. The `From` URI must identify the configured Peer by its username, and the Peer must authenticate the INVITE using its credentials. The Request-URI must identify the Agent in its configured Domain, for example `sip:1002@sip.local`.
+
+Routr uses the Request-URI to look up the Agent's registered contact, even when the `To` header differs. If the Agent exists but has no registered contact, Routr returns `480 Temporarily Unavailable`. This routing type does not require a Number, a Trunk, or an `X-DOD-Number` header.
+
+Peers are not bound to a Domain, so authenticated Peers can call Agents across configured Domains. The destination Agent's extended metadata is attached to the routed request. Peer identification still relies on the `From` URI; using an external caller's number there requires a separate peer-identification mechanism.

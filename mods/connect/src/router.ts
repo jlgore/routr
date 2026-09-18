@@ -180,6 +180,15 @@ export function router(location: ILocationService, apiClient: CC.APIClient) {
         const route = await agentToAgent(location, request)
         return result(routingDirection, route, caller.extended)
       }
+      case RoutingDirection.PEER_TO_AGENT: {
+        const route = (
+          await location.findRoutes({
+            aor: T.getAOR(requestURI),
+            callId: request.ref
+          })
+        )[0]
+        return result(routingDirection, route, callee.extended)
+      }
       case RoutingDirection.AGENT_TO_PEER: {
         const route = await agentToPeer(location, callee as CC.Peer, request)
         return result(routingDirection, route, caller.extended)

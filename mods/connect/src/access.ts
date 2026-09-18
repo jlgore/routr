@@ -38,8 +38,10 @@ export const checkAccess = async (accessRequest: {
 }): Promise<Record<string, unknown>> => {
   const { apiClient, request, caller, callee, routingDirection } = accessRequest
   switch (routingDirection) {
+    case RoutingDirection.PEER_TO_AGENT:
     case RoutingDirection.PEER_TO_PSTN:
     case RoutingDirection.AGENT_TO_AGENT:
+    case RoutingDirection.AGENT_TO_PEER:
     case RoutingDirection.AGENT_TO_PSTN:
       return checkAgentOrPeerAccess(request, caller)
     case RoutingDirection.FROM_PSTN:
