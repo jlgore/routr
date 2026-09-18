@@ -27,7 +27,7 @@ RUN npm install --prefix /prisma --no-audit --no-fund prisma@6.19.1 \
 FROM alpine:3.23 AS java
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk
 WORKDIR /work
-RUN apk add --no-cache openjdk17-jdk
+RUN apk add --no-cache binutils openjdk17-jdk
 COPY .scripts/custom-jre.sh ./
 RUN sh custom-jre.sh
 
